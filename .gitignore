@@ -1,0 +1,26 @@
+# Données (stockées sur S3, jamais dans Git)
+data/
+*.csv
+*.parquet
+*.json.gz
+
+# Secrets / identifiants S3
+.env
+*.credentials
+.aws/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+
+# Spark / outils
+spark-warehouse/
+metastore_db/
+derby.log
+
+# OS / éditeur
+.DS_Store
+.vscode/
+.idea/
