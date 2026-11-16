@@ -19,8 +19,9 @@
 | URL | https://ressources.data.sncf.com/explore/dataset/regularite-mensuelle-tgv-aqst/ |
 | Licence | ODbL (Open Database License) |
 | Date de téléchargement | 2026-11-16 |
-| Taille (brute) | 2 909 048 octets (2,9 Mo), CSV `;`, 12 907 lignes × 26 colonnes, 2018-01 → 2026-09 |
-| sha256 | `ea35772466b6c14a601bd9618ade2fd62af6620b4a91ece529ef65ccf8e5a559` |
+| Taille (brute) | 2 909 048 octets (2,9 Mo), CSV `;`, 12 907 lignes × 26 colonnes |
+| Version | extraction figée `date <= 2026-09` (2018-01 → 2026-09), triée par date, service, gares |
+| sha256 | `8b2f5a27593f32516f0781ab591d8316f9b09e639fa5f4d76496046e837602ee` |
 
 ## Problem statement
 
