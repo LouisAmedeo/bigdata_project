@@ -31,14 +31,16 @@ Entre 2018-2019 (avant Covid) et 2024-2025, quelles liaisons TGV ont le plus per
 
 | Couche | Chemin |
 |---|---|
-| Raw | `s3://user-l-amedeo-ece/bigdata_project/raw/` |
+| Raw | `s3://user-l-amedeo-ece/bigdata_project/raw/regularite_tgv/extraction=2026-09/regularite-mensuelle-tgv-aqst.csv` (+ `.meta`) |
 | Processed | `s3://user-l-amedeo-ece/bigdata_project/processed/` |
+
+Bucket de référence : `user-l-amedeo-ece`. Les scripts utilisent `BUCKET=${BUCKET:-$KUBERNETES_NAMESPACE}`, donc chaque compte Onyxia écrit dans son propre bucket.
 
 ## Reproduction
 
 1. Cloner le dépôt : `git clone https://github.com/LouisAmedeo/bigdata_project.git && cd bigdata_project`
 2. Téléchargement des données brutes : `bash src/00_download.sh` (écrit le CSV et un fichier `.meta` avec taille et sha256 dans `data/raw/`)
-3. <upload sur S3>
+3. Ingestion raw sur S3 par un Job Kubernetes (télécharge à la source, vérifie le sha256, dépose sur S3) : `bash src/01_ingest_raw.sh` (manifeste `k8s/01-job-ingest-raw.yaml`)
 4. <exécution du pipeline>
 5. <vérification du résultat>
 

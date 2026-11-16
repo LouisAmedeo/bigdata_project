@@ -1,0 +1,88 @@
+# Étape 2 : ingestion de la couche raw sur S3
+#
+# Le Job télécharge le CSV directement à la source (SNCF Open Data), vérifie son
+# sha256, puis le dépose tel quel (aucune transformation) sur le S3 d'Onyxia.
+#   - initContainer "download" : curl + sha256sum -> volume partagé /work
+#   - container "upload"       : aws-cli -> s3://$BUCKET/bigdata_project/raw/...
+#
+# Prérequis (créés par src/01_ingest_raw.sh) :
+#   - ConfigMap ingest-config : source, sha256 attendu, bucket, prefix, endpoint, région
+#   - Secret    s3-credentials : identifiants S3 temporaires d'Onyxia
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ingest-raw-tgv
+  labels:
+    app: bigdata-project
+    step: ingest-raw
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400   # on garde le Job 24 h pour récupérer les logs (preuves)
+  template:
+    metadata:
+      labels:
+        app: bigdata-project
+        step: ingest-raw
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: download
+          image: curlimages/curl:8.11.1
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              echo "[$(date -u +%FT%TZ)] téléchargement : $SOURCE_URL"
+              curl --fail --silent --show-error --location --retry 3 -o /work/raw.csv "$SOURCE_URL"
+              SIZE=$(wc -c < /work/raw.csv | tr -d ' ')
+              SHA=$(sha256sum /work/raw.csv | cut -d' ' -f1)
+              echo "taille=${SIZE} octets sha256=${SHA}"
+              if [ "$SIZE" -lt 1000000 ] || [ "$SIZE" -gt 5000000 ]; then
+                echo "ERREUR : taille hors de [1 Mo ; 5 Mo]" >&2; exit 1
+              fi
+              if [ "$STRICT_SHA256" = "true" ] && [ "$SHA" != "$EXPECTED_SHA256" ]; then
+                echo "ERREUR : sha256 différent de la version de référence ($EXPECTED_SHA256)" >&2; exit 1
+              fi
+              cat > /work/raw.csv.meta <<EOF
+              source_url=$SOURCE_URL
+              licence=ODbL
+              ingest_utc=$(date -u +%FT%TZ)
+              size_bytes=$SIZE
+              sha256=$SHA
+              EOF
+          envFrom:
+            - configMapRef:
+                name: ingest-config
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits:   { cpu: 500m, memory: 128Mi }   # limits.cpu obligatoire (quota Onyxia, cf. TP3)
+          volumeMounts:
+            - { name: work, mountPath: /work }
+      containers:
+        - name: upload
+          image: amazon/aws-cli:2.22.0
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              DEST="s3://${BUCKET}/${RAW_PREFIX}"
+              echo "[$(date -u +%FT%TZ)] upload vers ${DEST}"
+              aws s3 cp /work/raw.csv      "${DEST}/${RAW_FILE}"
+              aws s3 cp /work/raw.csv.meta "${DEST}/${RAW_FILE}.meta"
+              echo "--- contenu de ${DEST}/"
+              aws s3 ls "${DEST}/" --recursive
+              echo "--- meta"
+              cat /work/raw.csv.meta
+          envFrom:
+            - configMapRef:
+                name: ingest-config
+            - secretRef:
+                name: s3-credentials
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits:   { cpu: 500m, memory: 256Mi }
+          volumeMounts:
+            - { name: work, mountPath: /work, readOnly: true }
+      volumes:
+        - name: work
+          emptyDir: {}
