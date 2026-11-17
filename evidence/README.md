@@ -1,7 +1,7 @@
 # Index des preuves (captures d'écran)
 
 Règles de l'énoncé : chaque capture doit montrer **l'identifiant / namespace Onyxia** et **la date et l'heure**, sinon elle n'est pas comptée.
-Nommage : `NN_description.png`, numérotation continue. Chaque capture est citée dans le rapport (section 8).
+Nommage : `NN_description.png`, numérotation continue. Chaque capture est citée dans le rapport (annexe).
 
 Comment elles ont été prises : captures du **vrai terminal du service vscode-pyspark** d'Onyxia (compte d'Arthur), le **2026-11-17 entre 07:44 et 08:28, heure de Paris**, à partir d'un **clone propre** du dépôt (capture 01). Sur chaque capture :
 - la commande commence par `echo "namespace : $KUBERNETES_NAMESPACE"; date` (deux premières lignes affichées) ;
@@ -12,18 +12,18 @@ Images du dépôt en 1600 px de large ; versions pleine résolution (3200 px) da
 
 | N° | Fichier | Étape | Qui | Montre | Rapport | État |
 |---|---|---|---|---|---|---|
-| 01 | `01_clone_depot.png` | 0 – reproduction | Arthur | `git clone` du dépôt public dans le service, historique des commits, `src/` et `k8s/` | §8, reproduction | fait |
+| 01 | `01_clone_depot.png` | 0 – reproduction | Arthur | `git clone` du dépôt public dans le service, historique des commits, `src/` et `k8s/` | annexe, reproduction | fait |
 | 02 | `02_ingest_job_logs.png` | 2 – ingestion raw | Arthur | `bash src/01_ingest_raw.sh` : Job `ingest-raw-tgv` Complete, logs `download` (taille 2 909 048 o, sha256) et `upload` | §3, composant Kubernetes | fait |
-| 03 | `03_s3_raw_listing.png` | 2 – ingestion raw | Arthur | `aws s3 ls` du bucket et de `raw/` (CSV + `.meta`), métadonnées de l'objet, en-tête du CSV relu sur S3 | §8, bucket raw | fait |
+| 03 | `03_s3_raw_listing.png` | 2 – ingestion raw | Arthur | `aws s3 ls` du bucket et de `raw/` (CSV + `.meta`), métadonnées de l'objet, en-tête du CSV relu sur S3 | annexe, bucket raw | fait |
 | 04 | `04_spark_job_logs.png` | 3 – transformation | Arthur | `bash src/02_transform.sh` : Job `transform-spark-tgv`, rapport qualité R01–R11, top 10, contexte annuel, listing de `processed/` | §3–5, composant Spark | fait |
 | 05 | `05_duckdb_verification.png` | 4 – vérification | Arthur | `bash src/03_verify.sh` : DuckDB relit le brut, compare au gold Spark, `VERIFICATION OK` sur 121 liaisons | §5, vérification indépendante | fait |
 | 06 | `06_benchmark_job.png` | 5 – mesures | Arthur | `bash src/04_benchmark.sh` : Job `benchmark-tgv`, tableaux pandas / DuckDB / Spark ×1 ×10 ×100, petits fichiers | §3 et §7, alternatives mesurées | fait |
 | 07 | `07_spark_executors_quota.png` | alternative rejetée | Arthur | `spark-submit --master k8s://…` : pods executors refusés (« exceeded quota … requests.memory=896Mi, limited 200Mi ») | §3, choix de Spark local[2] | fait |
 | 08 | `08_relance_run_pipeline.png` | relance | Arthur | `bash src/run_pipeline.sh 3` : reprise à l'étape 3, ConfigMaps « unchanged », Job recréé, vérification OK, 86 s | README, relance idempotente | fait |
 | 09 | `09_kubectl_jobs_quota.png` | Kubernetes | Arthur | `kubectl get jobs,pods` (3 Jobs Complete), ConfigMaps / Secret du pipeline, ressources du Job Spark, quota du namespace | §3, traces Kubernetes | fait |
-| 10 | `10_s3_processed_listing.png` | bucket final | Arthur | `aws s3 ls --recursive` : `raw/` et `processed/` (silver par année, gold, quality, verification, benchmark, `_run_info`) | §8, bucket processed | fait |
-| 11 | `11_github_actions_run.png` | initiative – CI | Louis | GitHub Actions `verif #1` (commit `18b1ec3`) vert : syntaxe, brut retéléchargé avec le **même sha256** que sur S3, vérif à la main | §8, reproductibilité hors Onyxia | fait |
-| 12 | `12_github_actions_verif_ok.png` | initiative – CI | Louis | fin du log : GRENOBLE -> PARIS LYON recalculé à la main = −6,965 pts comme Spark, `VERIF MANUELLE OK` | §5 et §8, vérification | fait |
+| 10 | `10_s3_processed_listing.png` | bucket final | Arthur | `aws s3 ls --recursive` : `raw/` et `processed/` (silver par année, gold, quality, verification, benchmark, `_run_info`) | annexe, bucket processed | fait |
+| 11 | `11_github_actions_run.png` | initiative – CI | Louis | GitHub Actions `verif #1` (commit `18b1ec3`) vert : syntaxe, brut retéléchargé avec le **même sha256** que sur S3, vérif à la main | annexe, reproductibilité hors Onyxia | fait |
+| 12 | `12_github_actions_verif_ok.png` | initiative – CI | Louis | fin du log : GRENOBLE -> PARIS LYON recalculé à la main = −6,965 pts comme Spark, `VERIF MANUELLE OK` | §5 et annexe, vérification | fait |
 | 13 | `13_verif_manuelle_onyxia.png` | 4 – vérification | Arthur | `python3 src/05_verif_manuelle.py` dans le terminal Onyxia : n°1 = −23,011 pts, `VERIF MANUELLE OK` | §5, vérification à la main | à faire |
 
 Note sur les captures 11-12 : elles ne viennent pas d'Onyxia mais de GitHub Actions (serveurs GitHub), donc pas d'ID Onyxia possible ; l'identifiant est le dépôt + le commit, la date/heure est dans la barre du Mac. Le run est public : https://github.com/LouisAmedeo/bigdata_project/actions/runs/44118714773 . L'étape « Vérif à la main » lance les liaisons n°1 et n°3 et échoue si l'une des deux ne redonne pas la valeur Spark : elle est verte, donc les deux sont OK (le bloc n°1 est plus haut dans le log).
