@@ -25,8 +25,8 @@ Bucket `$KUBERNETES_NAMESPACE`, ici `user-a-benatar-ece` : raw `s3://user-a-bena
 
 Dans le terminal du service : `git clone https://github.com/LouisAmedeo/bigdata_project.git && cd bigdata_project`, puis `bash src/run_pipeline.sh` (≈ 3 min) qui enchaîne :
 
-- étape 2 : `bash src/01_ingest_raw.sh` — Job k8s : brut vérifié (taille, sha256) vers `raw/` ;
-- étape 3 : `bash src/02_transform.sh` — Job k8s Spark : 11 règles qualité, silver et gold Parquet ;
-- étape 4 : `bash src/03_verify.sh` — DuckDB recalcule depuis le brut : `VERIFICATION OK`.
+- étape 2 : `bash src/01_ingest_raw.sh` — Job k8s, brut vérifié (sha256) vers `raw/` ;
+- étape 3 : `bash src/02_transform.sh` — Job k8s Spark : qualité, silver, gold ;
+- étape 4 : `bash src/03_verify.sh` — DuckDB depuis le brut : `VERIFICATION OK`.
 
 **Relance :** étapes idempotentes, relancer suffit ; reprise à l'étape N : `bash src/run_pipeline.sh N` ; échec : `kubectl logs job/<nom>`. Mesures du rapport : `bash src/04_benchmark.sh`.
