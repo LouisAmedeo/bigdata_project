@@ -37,7 +37,7 @@ wait_job transform-spark-tgv 1200
 
 # 3. Traces d'exécution (logs Spark sans le bruit INFO/WARN du démarrage)
 echo "== logs du Job transform-spark-tgv"
-kubectl logs job/transform-spark-tgv | grep -vE '^[0-9]{2}/[0-9]{2}/[0-9]{2} [0-9:]{8} (INFO|WARN)|^\s*$|NativeCodeLoader'
+kubectl logs job/transform-spark-tgv | grep -vE '^[0-9/:. ]+(\[[^]]*\] )?(INFO|WARN) |^WARNING: |^\s*$'
 kubectl get job,pods -l step=transform-spark -o wide
 
 # 4. Vérification depuis le terminal : ce qui a été écrit dans processed/

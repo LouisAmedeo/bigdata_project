@@ -82,7 +82,7 @@ def log(msg):
 
 
 spark = spark_session()
-spark.sparkContext.setLogLevel("WARN")
+spark.sparkContext.setLogLevel("ERROR")   # traces lisibles : nos propres messages + tableaux
 log(f"Spark {spark.version} master={spark.sparkContext.master} | raw={RAW_PATH} | out={OUT}")
 
 # ---------------------------------------------------------------- 1. lecture du brut
