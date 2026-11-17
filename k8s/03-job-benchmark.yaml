@@ -1,0 +1,40 @@
+# Étape 5 (facultative) : banc d'essai pandas / DuckDB / Spark dans un pod dédié
+# Mêmes limites que le service vscode-pyspark (2 CPU, 2000Mi) pour des mesures comparables.
+# Prérequis (créés par src/04_benchmark.sh) : ConfigMaps benchmark-config et benchmark-code, Secret s3-credentials
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: benchmark-tgv
+  labels:
+    app: bigdata-project
+    step: benchmark
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 3000
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app: bigdata-project
+        step: benchmark
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: bench
+          image: inseefrlab/onyxia-vscode-pyspark:py3.13.15-spark4.1.1   # pandas, duckdb, pyspark, psutil
+          imagePullPolicy: IfNotPresent
+          command: ["bash", "/app/04_benchmark_inpod.sh"]
+          envFrom:
+            - configMapRef:
+                name: benchmark-config
+            - secretRef:
+                name: s3-credentials
+          resources:
+            requests: { cpu: 50m, memory: "0" }   # requests.memory du quota déjà pris par le service
+            limits:   { cpu: "2", memory: 2000Mi }
+          volumeMounts:
+            - { name: code, mountPath: /app, readOnly: true }
+      volumes:
+        - name: code
+          configMap:
+            name: benchmark-code
