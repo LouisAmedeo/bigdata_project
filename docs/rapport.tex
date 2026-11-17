@@ -1,0 +1,119 @@
+% Rapport du projet Big Data (4 pages max) -- à compiler sur Overleaf avec pdfLaTeX
+% Fichiers à importer dans le projet Overleaf : rapport.tex + schema_pipeline.pdf
+\documentclass[10pt,a4paper]{article}
+
+\usepackage{iftex}
+\ifPDFTeX            % Overleaf par défaut (pdfLaTeX)
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage{lmodern}
+\else                % XeLaTeX / LuaLaTeX
+  \usepackage{fontspec}
+\fi
+\usepackage[french]{babel}
+\usepackage[margin=1.5cm,top=1.3cm,bottom=1.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage[font=small,labelfont=bf,skip=3pt]{caption}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+
+% mise en page compacte (on a 4 pages pour tout dire)
+\definecolor{bleu}{HTML}{1D3F66}
+\titleformat{\section}{\large\bfseries\color{bleu}}{\thesection.}{0.5em}{}
+\titlespacing*{\section}{0pt}{7pt}{3pt}
+\setlist{nosep,leftmargin=*}
+\setlength{\parskip}{3pt}
+\setlength{\parindent}{0pt}
+\renewcommand{\arraystretch}{1.15}
+\newcommand{\code}[1]{\texttt{\small #1}}
+
+\begin{document}
+
+% ---------------------------------------------------------------- en-tête
+{\raggedright\LARGE\bfseries\color{bleu} Ponctualité des TGV : quelles liaisons se sont dégradées depuis 2019, et pourquoi~?\par}
+\vspace{4pt}
+\textbf{Projet Big Data -- ING5, ECE 2026} \quad·\quad AMEDEO Louis, BENATAR Arthur\\
+Dépôt Git : \url{https://github.com/LouisAmedeo/bigdata_project}
+\vspace{2pt}\hrule\vspace{4pt}
+
+% ---------------------------------------------------------------- 1
+\section{Problématique}
+
+\textbf{Question.} Entre 2018-2019 (avant le Covid) et 2024-2025, quelles liaisons TGV ont le plus perdu en ponctualité à l'arrivée, et quelles familles de causes expliquent cette dégradation~?
+
+\textbf{Indicateurs.} Pour une liaison et une période, la ponctualité vaut $1 - \frac{\text{trains en retard à l'arrivée}}{\text{trains circulés}}$, avec circulés $=$ prévus $-$ annulés. Elle est calculée sur la somme des trains de la période, et non comme une moyenne de taux mensuels, pour ne pas donner le même poids à un mois de 20 trains et à un mois de 200. La dégradation est l'écart en points entre les deux périodes. Chaque train en retard est réparti entre les six causes publiées par la SNCF, au prorata de leurs pourcentages. La \emph{contribution} d'une cause est la hausse de sa part dans les retards, en points de trains circulés~; la somme des contributions est égale, au signe près, à la dégradation. Une liaison n'est comparée que si elle a au moins 18 mois de données sur 24 dans chaque période, ce qui en retient 121 sur 130.
+
+\textbf{Pourquoi le résultat est vérifiable.} Le calcul est déterministe et ne part que du fichier brut. Un autre moteur, ou un calcul à la main, doit donc retrouver exactement les mêmes chiffres, ce que nous avons fait (§\ref{sec:resultats}).
+
+% ---------------------------------------------------------------- 2
+\section{Données}
+
+\begin{tabularx}{\linewidth}{@{}>{\bfseries}l X@{}}
+\toprule
+Jeu de données & \emph{Régularité mensuelle TGV par liaisons}, SNCF Voyageurs / AQST, portail \code{ressources.data.sncf.com}, identifiant \code{regularite-mensuelle-tgv-aqst} \\
+Licence, téléchargement & ODbL~; téléchargé le 2026-11-16 avec une extraction figée (\code{date <= 2026-09}, tri imposé), donc reproductible : sha256 \code{8b2f5a27\ldots 7602ee} \\
+Taille & \textbf{2\,909\,048 octets (2,9 Mo)}, dans l'intervalle 1-5 Mo imposé~; CSV séparé par «~;~», encodé en UTF-8 avec BOM \\
+Contenu & 12\,907 lignes $\times$ 26 colonnes~; 105 mois (janvier 2018 à septembre 2026)~; 130 liaisons entre 59 gares~; service National (11\,339 lignes) ou International (1\,568 lignes) \\
+\bottomrule
+\end{tabularx}
+
+\textbf{Justification.} C'est une source officielle, publiée chaque mois et liaison par liaison. Elle couvre l'avant, le pendant et l'après Covid, et donne pour chaque mois la répartition des retards par cause, ce qui permet de répondre au «~pourquoi~» et pas seulement au «~où~». Elle est différente des jeux de données du cours et contient de vrais défauts de qualité (§\ref{sec:qualite}). Trois autres jeux SNCF ont été écartés après mesure, car ils font moins de 1 Mo : la régularité TER (0,46 Mo, données par région seulement), la régularité Intercités (0,44 Mo, sans les causes) et la fréquentation des gares (0,21 Mo, sans dimension temporelle).
+
+\textbf{Schéma.} Une ligne correspond à une liaison, un mois et un service.
+
+{\small
+\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Groupe} & \textbf{Colonnes} \\
+\midrule
+Clé (4) & \code{date} (AAAA-MM), \code{service}, \code{gare\_depart}, \code{gare\_arrivee} \\
+Volumes (7) & \code{nb\_train\_prevu}, \code{nb\_annulation}, \code{nb\_train\_depart\_retard}, \code{nb\_train\_retard\_arrivee}, \code{nb\_train\_retard\_sup\_15}, \code{\_sup\_30}, \code{\_sup\_60} \\
+Durées en min (6) & \code{duree\_moyenne}, \code{retard\_moyen\_depart}, \code{retard\_moyen\_arrivee}, \code{retard\_moyen\_tous\_trains\_depart} / \code{\_arrivee}, \code{retard\_moyen\_trains\_retard\_sup15} \\
+Causes en \% (6) & \code{prct\_cause\_externe}, \code{\_infra}, \code{\_gestion\_trafic}, \code{\_materiel\_roulant}, \code{\_gestion\_gare}, \code{\_prise\_en\_charge\_voyageurs} \\
+Commentaires (3) & texte libre, parfois sur plusieurs lignes (\code{commentaire\_annulation}, \code{commentaire\_retards\_depart}, \code{commentaires\_retard\_arrivee}) \\
+\bottomrule
+\end{tabularx}}
+
+% ---------------------------------------------------------------- 3
+\section{Pipeline et choix techniques}\label{sec:pipeline}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{schema_pipeline.pdf}
+\caption{Schéma du pipeline : la chaîne principale en haut, les contrôles en bas. Les étapes portent les mêmes numéros que dans \code{src/run\_pipeline.sh}.}
+\label{fig:pipeline}
+\end{figure}
+
+Tout tourne sur Onyxia, dans le namespace de l'utilisateur, et \code{bash src/run\_pipeline.sh} enchaîne les étapes 2 à 4 en 3 minutes environ.
+\begin{itemize}
+  \item \textbf{Étape 2, ingestion (Job Kubernetes).} Un initContainer \code{curl} télécharge le CSV à la source et refuse le fichier si son sha256 ou sa taille ne correspondent pas. Un conteneur \code{aws-cli} le dépose ensuite tel quel dans \code{raw/}, accompagné d'un fichier \code{.meta} (source, date, taille, sha256).
+  \item \textbf{Étape 3, transformation (Job Kubernetes Spark).} Spark lit le brut avec un schéma explicite, applique les 11 règles de qualité (§\ref{sec:qualite}), écrit la couche silver en Parquet partitionné par année, puis la couche gold (121 liaisons classées) et le rapport qualité dans \code{quality/}.
+  \item \textbf{Étape 4, vérification (DuckDB).} DuckDB relit le CSV brut, refait tout le calcul en SQL et le compare au gold, liaison par liaison (§\ref{sec:resultats}).
+\end{itemize}
+
+\emph{(Choix techniques et alternatives mesurées : à rédiger.)}
+
+% ---------------------------------------------------------------- 4 à 8 (à rédiger)
+\section{Qualité des données}\label{sec:qualite}
+\emph{(à rédiger)}
+
+\section{Résultats et vérification}\label{sec:resultats}
+\emph{(à rédiger)}
+
+\section{Limites}
+\emph{(à rédiger)}
+
+\section{Si les données étaient 100 fois plus volumineuses}
+\emph{(à rédiger)}
+
+% ---------------------------------------------------------------- annexe (dans les 4 pages)
+\appendix
+\section*{Annexe -- Preuves d'exécution}\label{sec:preuves}
+\emph{(à rédiger : tableau des captures 01 à 13 de \code{evidence/} + captures du bucket raw et processed)}
+
+\end{document}
