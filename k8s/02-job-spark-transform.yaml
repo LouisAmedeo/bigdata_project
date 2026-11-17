@@ -1,0 +1,56 @@
+# Étape 3 : transformation Spark DataFrame (raw -> silver/gold/quality) dans un Job Kubernetes
+#
+# Le pod lance spark-submit en mode local[2] : le driver et ses 2 threads d'exécution tournent
+# dans ce pod. Des executors Spark en pods séparés sont impossibles dans le namespace Onyxia :
+# Spark réserve requests.memory = mémoire executor, et le quota (200Mi) est déjà pris par le service.
+#
+# Prérequis (créés par src/02_transform.sh) :
+#   - ConfigMap transform-config     : bucket, chemins s3a raw/processed, endpoint
+#   - ConfigMap spark-transform-code : src/02_transform_spark.py (monté dans /app)
+#   - Secret    s3-credentials       : identifiants S3 temporaires d'Onyxia
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: transform-spark-tgv
+  labels:
+    app: bigdata-project
+    step: transform-spark
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 1800
+  ttlSecondsAfterFinished: 86400   # Job gardé 24 h pour relire les logs (preuves)
+  template:
+    metadata:
+      labels:
+        app: bigdata-project
+        step: transform-spark
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: spark
+          # même image que le service vscode-pyspark : Spark 4.1.1 + hadoop-aws (S3A), souvent déjà en cache
+          image: inseefrlab/onyxia-vscode-pyspark:py3.13.15-spark4.1.1
+          imagePullPolicy: IfNotPresent
+          command: ["/usr/local/lib/spark/bin/spark-submit"]
+          args:
+            - --master
+            - local[2]
+            - --driver-memory
+            - 1g
+            - --conf
+            - spark.ui.enabled=false
+            - /app/02_transform_spark.py
+          envFrom:
+            - configMapRef:
+                name: transform-config
+            - secretRef:
+                name: s3-credentials
+          resources:
+            requests: { cpu: 50m, memory: "0" }        # requests.memory du quota déjà pris (cf. Job 01)
+            limits:   { cpu: "2", memory: 1536Mi }
+          volumeMounts:
+            - { name: code, mountPath: /app, readOnly: true }
+      volumes:
+        - name: code
+          configMap:
+            name: spark-transform-code
