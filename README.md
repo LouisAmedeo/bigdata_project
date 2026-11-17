@@ -29,4 +29,4 @@ Dans le terminal du service : `git clone https://github.com/LouisAmedeo/bigdata_
 - étape 3 : `bash src/02_transform.sh` — Job k8s Spark : qualité, silver, gold ;
 - étape 4 : `bash src/03_verify.sh` — DuckDB depuis le brut : `VERIFICATION OK`.
 
-**Relance :** étapes idempotentes, relancer suffit ; reprise à l'étape N : `bash src/run_pipeline.sh N` ; échec : `kubectl logs job/<nom>`. Mesures du rapport : `bash src/04_benchmark.sh`.
+**Relance :** étapes idempotentes, relancer suffit ; reprise à l'étape N : `bash src/run_pipeline.sh N` ; échec : `kubectl logs job/<nom>`. Mesures du rapport : `bash src/04_benchmark.sh` ; vérif à la main du n°1 (Python pur, brut local) : `python3 src/05_verif_manuelle.py`.
