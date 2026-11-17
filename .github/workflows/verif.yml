@@ -1,0 +1,39 @@
+# Vérif automatique à chaque push : on rejoue ce qui peut tourner hors Onyxia.
+# 1. syntaxe des scripts (bash, python, manifestes k8s)
+# 2. téléchargement du brut + contrôle du sha256 (même fichier que sur S3)
+# 3. recalcul à la main du n°1 du classement (doit redonner -23,011 pts comme Spark)
+name: verif
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verif:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Syntaxe des scripts
+        run: |
+          for f in src/*.sh; do bash -n "$f" && echo "ok $f"; done
+          python -m py_compile src/*.py && echo "ok python"
+          pip install --quiet pyyaml
+          python -c "import yaml, glob; [list(yaml.safe_load_all(open(f))) for f in glob.glob('k8s/*.yaml')]; print('ok k8s')"
+
+      - name: Téléchargement du brut + sha256
+        run: |
+          bash src/00_download.sh
+          # le script prévient seulement si le sha256 change, ici on veut que ça casse
+          grep -q "sha256_reference=ok" data/raw/*.meta || { echo "sha256 différent de la référence"; exit 1; }
+
+      - name: Vérif à la main (n°1 et n°3 du classement)
+        run: |
+          python src/05_verif_manuelle.py
+          python src/05_verif_manuelle.py "GRENOBLE -> PARIS LYON" -6.965

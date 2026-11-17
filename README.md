@@ -1,5 +1,7 @@
 # Big Data project — Ponctualité des TGV
 
+[![verif](https://github.com/LouisAmedeo/bigdata_project/actions/workflows/verif.yml/badge.svg)](https://github.com/LouisAmedeo/bigdata_project/actions/workflows/verif.yml)
+
 ## Authors
 
 AMEDEO Louis, BENATAR Arthur
