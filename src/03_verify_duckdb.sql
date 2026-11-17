@@ -6,7 +6,6 @@
 -- Sorties : processed/verification/comparaison_duckdb_spark.csv et resume.csv
 -- La requête finale échoue (code retour != 0) si un écart dépasse 1e-6 point ou si le classement diffère.
 .bail on
-.timer on
 
 CREATE OR REPLACE SECRET projet_s3 (
     TYPE s3, PROVIDER credential_chain, CHAIN 'env',          -- identifiants AWS_* d'Onyxia

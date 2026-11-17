@@ -12,6 +12,8 @@ banner "étape 4 : vérification indépendante DuckDB"
 check_s3
 duckdb --version
 # le secret créé par le script a une portée s3://$BUCKET/ : il prime sur d'éventuels secrets persistants
+T0=$(date +%s)
 duckdb -c ".read src/03_verify_duckdb.sql"
+echo "== vérification DuckDB terminée en $(( $(date +%s) - T0 )) s"
 echo "== sorties : aws s3 ls processed/verification/"
 aws s3 ls "s3://${BUCKET}/${PROCESSED_PREFIX}/verification/" --human-readable
