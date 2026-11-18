@@ -30,7 +30,7 @@ spec:
             - secretRef:
                 name: s3-credentials
           resources:
-            requests: { cpu: 50m, memory: "0" }   # requests.memory du quota déjà pris par le service
+            requests: { cpu: "0", memory: "0" }   # requests.memory du quota déjà pris par le service
             limits:   { cpu: "2", memory: 2000Mi }
           volumeMounts:
             - { name: code, mountPath: /app, readOnly: true }

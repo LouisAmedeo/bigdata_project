@@ -55,8 +55,10 @@ spec:
                 name: ingest-config
           resources:
             # Quota du namespace Onyxia : limits obligatoires ; requests.memory total = 200Mi,
-            # déjà entièrement réservés par le service vscode -> requests.memory à 0 sinon pod refusé
-            requests: { cpu: 50m, memory: "0" }
+            # déjà entièrement réservés par le service vscode -> requests.memory à 0 sinon pod refusé.
+            # requests.cpu à 0 aussi : quand le cluster partagé est plein (« 3 Insufficient cpu »),
+            # un pod qui réserve même 50m reste Pending ; à 0 il passe et prend le CPU libre (limits inchangées)
+            requests: { cpu: "0", memory: "0" }
             limits:   { cpu: 500m, memory: 128Mi }   # limits.cpu obligatoire (quota Onyxia, cf. TP3)
           volumeMounts:
             - { name: work, mountPath: /work }
@@ -81,7 +83,7 @@ spec:
             - secretRef:
                 name: s3-credentials
           resources:
-            requests: { cpu: 50m, memory: "0" }
+            requests: { cpu: "0", memory: "0" }
             limits:   { cpu: 500m, memory: 256Mi }
           volumeMounts:
             - { name: work, mountPath: /work, readOnly: true }
